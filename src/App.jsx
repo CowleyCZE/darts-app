@@ -26,7 +26,85 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   );
 };
 
+// --- Pomocné funkce pro statistiky ---
+
+const calculateHeadToHead = (selectedPlayerId, allGames) => {
+  const h2hStats = {}; // { opponentId: { wins: 0, losses: 0, totalMatches: 0 } }
+
+  allGames.forEach(game => {
+    if (game.status === 'finished' && game.players.includes(selectedPlayerId)) {
+      const opponents = game.players.filter(pId => pId !== selectedPlayerId);
+      
+      opponents.forEach(opponentId => {
+        if (!h2hStats[opponentId]) {
+          h2hStats[opponentId] = { wins: 0, losses: 0, totalMatches: 0 };
+        }
+        h2hStats[opponentId].totalMatches++;
+
+        if (game.winner === selectedPlayerId) {
+          h2hStats[opponentId].wins++;
+        } else if (game.winner === opponentId) { // Ensure opponent won against THIS player
+          h2hStats[opponentId].losses++;
+        }
+      });
+    }
+  });
+
+  return h2hStats;
+};
+
 // --- Komponenty ---
+
+const PlayerStatsDetail = ({ selectedPlayer, allGames, allPlayers, onClose }) => {
+    if (!selectedPlayer) return null;
+
+    const h2hStats = calculateHeadToHead(selectedPlayer.id, allGames);
+
+    return (
+        <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-8 animate-in slide-in-from-right duration-300">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                    <User className="text-blue-500" /> Statistiky: {selectedPlayer.id}
+                </h2>
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                    <X size={24} />
+                </button>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3">
+                <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-2">Celkové</p>
+                <div className="flex justify-between text-sm">
+                    <span className="opacity-60">Celkem zápasů:</span>
+                    <span className="font-bold">{selectedPlayer.matches || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="opacity-60">Celkem výher:</span>
+                    <span className="font-bold">{selectedPlayer.wins || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                    <span className="opacity-60">Win Rate:</span>
+                    <span className="font-bold">
+                        {selectedPlayer.matches > 0 ? ((selectedPlayer.wins / selectedPlayer.matches) * 100).toFixed(1) : 0}%
+                    </span>
+                </div>
+            </div>
+
+            {Object.keys(h2hStats).length > 0 && (
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3">
+                    <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-2">Head-to-Head</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                        {Object.entries(h2hStats).map(([opponentId, stats]) => (
+                            <div key={opponentId} className="flex justify-between items-center text-sm bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm">
+                                <span className="font-bold">{opponentId}</span>
+                                <span>{stats.wins} - {stats.losses} ({stats.totalMatches} zápasů)</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const SettingsScreen = ({ darkMode, setDarkMode, onBack }) => {
   return (
@@ -65,7 +143,7 @@ const SettingsScreen = ({ darkMode, setDarkMode, onBack }) => {
   );
 };
 
-const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
+const PlayerManager = ({ players, onAdd, onDelete, onRename, onSelectPlayer }) => {
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -122,7 +200,7 @@ const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
               </div>
             ) : (
               <>
-                <span className="truncate font-bold text-sm pl-1">{p.id}</span>
+                <span className="truncate font-bold text-sm pl-1 cursor-pointer" onClick={() => onSelectPlayer(p.id)}>{p.id}</span>
                 <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => startRename(p)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
                     <Edit2 size={16} />
@@ -139,6 +217,109 @@ const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
     </div>
   );
 };
+
+const HallOfFame = ({ players, games, onSelectPlayer }) => {
+
+  const calculateWeightedRankings = () => {
+    const rankings = {}; // { playerId: { score: 0, wins: 0, matches: 0, gamesPlayedMap: {}, opponentsPlayedMap: {} }}
+
+    players.forEach(p => {
+      rankings[p.id] = {
+        score: 0,
+        wins: p.wins,
+        matches: p.matches,
+        gamesPlayedMap: {}, // gameType.id: count
+        opponentsPlayedMap: {}, // opponentId: count
+        multiplayerMatches: 0,
+        winRate: p.matches > 0 ? (p.wins / p.matches) : 0
+      };
+    });
+
+    games.forEach(game => {
+      if (game.status === 'finished' && game.winner) {
+        const winnerId = game.winner;
+        const gameType = game.gameType;
+        const opponentIds = game.players.filter(pId => pId !== winnerId);
+        
+        // Base score for winning
+        rankings[winnerId].score += 100; 
+
+        // Bonus for multiplayer games
+        if (game.players.length > 2) {
+            rankings[winnerId].score += 50 * (game.players.length - 2); // More players, more bonus
+            if (rankings[winnerId].multiplayerMatches !== undefined) {
+              rankings[winnerId].multiplayerMatches++;
+            } else {
+              rankings[winnerId].multiplayerMatches = 1;
+            }
+        }
+
+        // Bonus for game types (simple example, could be more complex)
+        switch (gameType.category) {
+            case '01': rankings[winnerId].score += 20; break;
+            case 'cricket': rankings[winnerId].score += 30; break;
+            case 'highscore': rankings[winnerId].score += 10; break;
+            // Add more categories with different weights
+        }
+        
+        // Track games played by type
+        if (!rankings[winnerId].gamesPlayedMap[gameType.id]) {
+            rankings[winnerId].gamesPlayedMap[gameType.id] = 0;
+        }
+        rankings[winnerId].gamesPlayedMap[gameType.id]++;
+
+        // Track opponents played against
+        opponentIds.forEach(oppId => {
+            if (!rankings[winnerId].opponentsPlayedMap[oppId]) {
+                rankings[winnerId].opponentsPlayedMap[oppId] = 0;
+            }
+            rankings[winnerId].opponentsPlayedMap[oppId]++;
+        });
+      }
+    });
+
+    // Final score adjustments (e.g., multiplier for win rate)
+    Object.values(rankings).forEach(p => {
+        p.score = Math.round(p.score * (1 + p.winRate)); // Higher win rate -> higher score multiplier
+        p.gamesPlayedCount = Object.keys(p.gamesPlayedMap).length;
+        p.opponentsPlayedCount = Object.keys(p.opponentsPlayedMap).length;
+    });
+
+    return Object.values(rankings).sort((a, b) => b.score - a.score);
+  };
+
+  const rankedPlayers = calculateWeightedRankings();
+
+  return (
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-4">
+      <h3 className="text-lg font-black mb-6 flex items-center gap-2 uppercase tracking-widest opacity-80"><BarChart3 size={20} className="text-orange-500" /> Síň slávy</h3>
+      <div className="grid gap-3">
+        {rankedPlayers.length === 0 ? (
+             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl text-center text-sm opacity-60">
+                Žádní hráči v Síni slávy (odehrajte první zápas!)
+             </div>
+        ) : (
+            rankedPlayers.map((p, index) => (
+              <div key={p.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden group flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="text-2xl font-black text-slate-400 opacity-70">{index + 1}.</span>
+                    <span className="truncate pr-2 font-black text-lg uppercase italic cursor-pointer" onClick={() => onSelectPlayer(p.id)}>{p.id}</span>
+                </div>
+                <div className="text-blue-600 dark:text-blue-400 font-black text-2xl tracking-tighter flex items-center gap-1">
+                    {p.score} <span className="text-sm opacity-50">bodů</span>
+                </div>
+                {/* Visual indicator for rank */}
+                {index === 0 && <Trophy size={24} className="text-yellow-400 absolute right-4 top-1/2 -translate-y-1/2 opacity-80" />}
+              </div>
+            ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+
 
 // --- Konstanty her ---
 
@@ -785,6 +966,7 @@ const ScoreBoard = ({
 }) => {
   const currentTotalLegs = game.history?.length || 0;
   const turnIndex = (currentTotalLegs + (game.startingIndex || 0)) % game.players.length;
+  const isX01Game = game.gameType.category === '01';
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 h-full flex flex-col">
@@ -797,10 +979,10 @@ const ScoreBoard = ({
         <div className="flex flex-col items-center">
             <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-40">Best of {game.targetSets} Sets</div>
             <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-blue-600 dark:text-blue-400">{game.gameType}</span>
+                <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-blue-600 dark:text-blue-400">{game.gameType.name}</span>
                 <div className="flex gap-1">
-                     {game.doubleIn && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DI</span>}
-                     {game.doubleOut && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DO</span>}
+                     {isX01Game && game.doubleIn && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DI</span>}
+                     {isX01Game && game.doubleOut && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DO</span>}
                 </div>
             </div>
         </div>
@@ -923,7 +1105,7 @@ const MatchDetail = ({ game, onClose }) => {
           </div>
           <div className="flex justify-between text-sm">
               <span className="opacity-60">Typ hry:</span>
-              <span className="font-bold">{game.gameType} {game.doubleIn ? 'DI' : ''}{game.doubleOut ? 'DO' : ''}</span>
+              <span className="font-bold">{game.gameType.id}. {game.gameType.name} {game.doubleIn ? 'DI' : ''}{game.doubleOut ? 'DO' : ''}</span>
           </div>
           <div className="flex justify-between text-sm">
               <span className="opacity-60">Formát:</span>
@@ -934,6 +1116,23 @@ const MatchDetail = ({ game, onClose }) => {
               <span className="font-bold">{game.history ? game.history.length : 0} odehraných legů</span>
           </div>
       </div>
+
+      {game.history && game.history.length > 0 && (
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3">
+            <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-2">Historie legů</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                {game.history.map((leg, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm">
+                        <span>Leg {index + 1}:</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">{game.players[leg.playerIdx]} vyhrál</span>
+                        <span className="text-xs opacity-60">
+                            (Stav: {leg.scoresBeforeLeg.map(s => s.sets).join('-')}, {leg.scoresBeforeLeg.map(s => s.legs).join('-')})
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -953,7 +1152,7 @@ const App = () => {
   // Settings State
   const [tSets, setTSets] = useState(3);
   const [lPerSet, setLPerSet] = useState(3);
-  const [gType, setGType] = useState(501);
+  const [gType, setGType] = useState(null); // Will store the full game object {id, name, category}
   const [dIn, setDIn] = useState(false);
   const [dOut, setDOut] = useState(true);
 
@@ -1039,19 +1238,23 @@ const App = () => {
     await saveGames(updatedGames);
   };
 
-  const handleStartGame = async (selectedPlayerIds) => {
+  const handleStartGame = async (selectedPlayerIds, startingIndex) => {
     const gameId = uuidv4();
+    const selectedGameCategory = GAME_CATEGORIES.find(c => c.id === selectedCategory);
+    const selectedGame = selectedGameCategory?.games.find(g => g.id === Number(selectedGameId));
+
     const newGame = {
       id: gameId,
       players: selectedPlayerIds,
+      startingIndex: startingIndex, // Store starting index
       targetSets: tSets,
       legsPerSet: lPerSet,
-      gameType: gType,
+      gameType: selectedGame, // Store full game object
       doubleIn: dIn,
       doubleOut: dOut,
       status: 'playing',
       scores: selectedPlayerIds.map(() => ({ sets: 0, legs: 0 })),
-      history: [],
+      history: [], // Array of { playerIdx, scoresBeforeLeg }
       createdAt: Date.now()
     };
 
@@ -1073,7 +1276,11 @@ const App = () => {
     if (!activeGame || activeGame.status === 'finished') return;
 
     const nextScores = JSON.parse(JSON.stringify(activeGame.scores));
-    const nextHistory = [...(activeGame.history || []), JSON.parse(JSON.stringify(activeGame.scores))];
+    const scoresBeforeLeg = JSON.parse(JSON.stringify(activeGame.scores)); // Snapshot before update
+    const nextHistory = [...(activeGame.history || []), { 
+        playerIdx: playerIdx, 
+        scoresBeforeLeg: scoresBeforeLeg 
+    }];
     
     nextScores[playerIdx].legs += 1;
 
@@ -1108,11 +1315,13 @@ const App = () => {
     if (!activeGame.history || activeGame.history.length === 0) return;
     
     const newHistory = [...activeGame.history];
-    const prevScores = newHistory.pop();
+    const lastLegRecord = newHistory.pop();
+    const prevScores = lastLegRecord.scoresBeforeLeg; // Revert to scores before last leg
     const wasFinished = activeGame.status === 'finished';
     const oldWinner = activeGame.winner;
 
-    if (wasFinished && oldWinner) {
+    // Only revert win count if the game was finished and this undo reverses the win
+    if (wasFinished && oldWinner && prevScores[lastLegRecord.playerIdx].sets < activeGame.targetSets) {
       const updatedPlayers = players.map(p => {
           if (p.id === oldWinner) {
               return { ...p, wins: Math.max(0, (p.wins || 0) - 1) };
@@ -1195,6 +1404,7 @@ const App = () => {
               onAdd={addPlayer} 
               onDelete={deletePlayer} 
               onRename={renamePlayer}
+              onSelectPlayer={handleSelectPlayerForStats} // Pass new prop
             />
             
             <div className="space-y-4">
@@ -1215,7 +1425,7 @@ const App = () => {
                           <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${g.status === 'finished' ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
                               {g.status === 'finished' ? 'Dokončeno' : 'Hraje se'}
                           </span>
-                          <span className="text-[10px] font-black text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">{g.gameType}</span>
+                          <span className="text-[10px] font-black text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">{g.gameType.name}</span>
                         </div>
                         <div className="font-black text-lg truncate uppercase italic tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {g.players?.join(' vs ') || 'ZÁPAS'}
@@ -1252,13 +1462,22 @@ const App = () => {
             <MatchDetail game={activeGame} onClose={() => { setActiveGame(null); setView('list'); }} />
         )}
 
+        {view === 'playerStats' && selectedPlayerForStats && (
+            <PlayerStatsDetail 
+                selectedPlayer={selectedPlayerForStats} 
+                allGames={games} 
+                allPlayers={players} 
+                onClose={() => { setSelectedPlayerForStats(null); setView('list'); }} 
+            />
+        )}
+
         {view === 'setup' && (
           <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
             <SetupScreen 
               availablePlayers={players}
               targetSets={tSets} setTargetSets={setTSets}
               legsPerSet={lPerSet} setLegsPerSet={setLPerSet}
-              gameType={gType} setGameType={setGType}
+              gameType={gType} setGameType={setGType} // Corrected
               doubleIn={dIn} setDoubleIn={setDIn}
               doubleOut={dOut} setDoubleOut={setDOut}
               startGame={handleStartGame}
