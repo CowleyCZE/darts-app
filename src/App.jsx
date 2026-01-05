@@ -1,12 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Trophy, User, Settings, ChevronRight, 
-  Undo2, Target, Plus, List, Trash2, Play, BarChart3, Users, Check, X, History, Edit2
+  Undo2, Target, Plus, List, Trash2, Play, BarChart3, Users, Check, X, History, Edit2,
+  Moon, Sun, Dices
 } from 'lucide-react';
 import localforage from 'localforage';
 import { v4 as uuidv4 } from 'uuid';
 
+// --- UI Komponenty ---
+
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, icon: Icon }) => {
+  const baseStyle = "flex items-center justify-center gap-2 font-black uppercase tracking-widest transition-all active:scale-95 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/30",
+    secondary: "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600",
+    danger: "bg-red-500 hover:bg-red-600 text-white shadow-red-500/30",
+    outline: "border-2 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-500 hover:text-blue-500 bg-transparent shadow-none"
+  };
+  
+  return (
+    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className} py-3 px-6`}>
+      {Icon && <Icon size={20} />}
+      {children}
+    </button>
+  );
+};
+
 // --- Komponenty ---
+
+const SettingsScreen = ({ darkMode, setDarkMode, onBack }) => {
+  return (
+    <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl space-y-6 animate-in slide-in-from-right duration-300">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+          <Settings className="text-slate-400" /> Nastavení
+        </h2>
+        <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            {darkMode ? <Moon className="text-blue-500" /> : <Sun className="text-orange-500" />}
+            <div>
+              <p className="font-bold">Tmavý režim</p>
+              <p className="text-xs opacity-50 uppercase tracking-wider">Vzhled aplikace</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${darkMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+          >
+            <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${darkMode ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </div>
+      
+      <div className="pt-4 text-center">
+         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-20">Verze 1.1.0</p>
+      </div>
+    </div>
+  );
+};
 
 const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
   const [newName, setNewName] = useState('');
@@ -33,8 +90,8 @@ const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-4">
-      <h3 className="text-lg font-bold flex items-center gap-2">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-4">
+      <h3 className="text-lg font-black flex items-center gap-2 uppercase tracking-wide opacity-80">
         <Users size={20} className="text-blue-500" /> Správa hráčů
       </h3>
       <div className="flex gap-2">
@@ -42,36 +99,36 @@ const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="Jméno nového hráče"
-          className="flex-1 bg-slate-100 dark:bg-slate-700 p-2 rounded-lg outline-none focus:ring-2 ring-blue-500 text-slate-900 dark:text-white"
+          className="flex-1 bg-slate-100 dark:bg-slate-700 p-3 rounded-xl outline-none focus:ring-2 ring-blue-500 text-slate-900 dark:text-white font-bold placeholder:font-normal"
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         />
-        <button onClick={handleAdd} className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors">
-          <Plus size={20} />
+        <button onClick={handleAdd} className="bg-blue-600 text-white px-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20">
+          <Plus size={24} />
         </button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
         {players.map(p => (
-          <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 p-2 rounded-lg group border border-slate-100 dark:border-slate-800">
+          <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl group border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 transition-all">
             {editingId === p.id ? (
-              <div className="flex gap-1 w-full">
+              <div className="flex gap-2 w-full">
                 <input 
                   autoFocus
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="flex-1 bg-white dark:bg-slate-800 text-sm p-1 rounded border border-blue-500 outline-none"
+                  className="flex-1 bg-white dark:bg-slate-800 text-sm p-1 rounded border border-blue-500 outline-none font-bold"
                   onKeyDown={(e) => e.key === 'Enter' && submitRename()}
                   onBlur={submitRename}
                 />
               </div>
             ) : (
               <>
-                <span className="truncate font-medium text-sm pl-1">{p.id}</span>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => startRename(p)} className="text-slate-400 hover:text-blue-500 p-1">
-                    <Edit2 size={14} />
+                <span className="truncate font-bold text-sm pl-1">{p.id}</span>
+                <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => startRename(p)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
+                    <Edit2 size={16} />
                   </button>
-                  <button onClick={() => onDelete(p.id)} className="text-slate-400 hover:text-red-500 p-1">
-                    <Trash2 size={14} />
+                  <button onClick={() => onDelete(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </>
@@ -94,111 +151,181 @@ const SetupScreen = ({
   onCancel
 }) => {
   const [selectedIds, setSelectedIds] = useState([]);
+  const [startingIndex, setStartingIndex] = useState(0);
+  const [isTossing, setIsTossing] = useState(false);
 
   const togglePlayer = (id) => {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(i => i !== id));
+      const newSelected = selectedIds.filter(i => i !== id);
+      setSelectedIds(newSelected);
+      if (startingIndex >= newSelected.length) setStartingIndex(0);
     } else if (selectedIds.length < 4) {
       setSelectedIds([...selectedIds, id]);
     }
   };
 
+  const handleCoinToss = () => {
+    if (selectedIds.length < 2) return;
+    setIsTossing(true);
+    let interval;
+    let counter = 0;
+    
+    // Simple visual shuffling effect
+    interval = setInterval(() => {
+        setStartingIndex(prev => (prev + 1) % selectedIds.length);
+        counter++;
+        if (counter > 10) {
+            clearInterval(interval);
+            const winnerIndex = Math.floor(Math.random() * selectedIds.length);
+            setStartingIndex(winnerIndex);
+            setIsTossing(false);
+        }
+    }, 100);
+  };
+
   return (
-    <div className="max-w-md mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <Settings className="text-blue-500" />
-          <h2 className="text-2xl font-bold uppercase tracking-tighter">Nastavení zápasu</h2>
+    <div className="max-w-xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-8 animate-in slide-in-from-bottom-10 duration-500">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-xl">
+             <Settings className="text-blue-600 dark:text-blue-400" size={24} />
+          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tighter">Nastavení zápasu</h2>
         </div>
-        <button onClick={onCancel} className="text-slate-400 hover:text-red-500 transition-colors">
-          <X size={24} />
+        <button onClick={onCancel} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all">
+          <X size={28} />
         </button>
       </div>
       
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Hráči (2-4)</label>
+          <label className="flex justify-between items-center text-xs font-black uppercase tracking-widest mb-3 opacity-60">
+            <span>Hráči ({selectedIds.length}/4)</span>
+            {selectedIds.length < 2 && <span className="text-red-500">Vyberte min. 2</span>}
+          </label>
           {availablePlayers.length === 0 ? (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-center">
-               <p className="text-xs text-red-600 dark:text-red-400 font-bold">Nejdříve přidejte hráče v hlavním menu!</p>
+            <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-2xl text-center border border-red-100 dark:border-red-900/30">
+               <p className="text-sm text-red-600 dark:text-red-400 font-bold">Nejdříve musíte vytvořit hráče v menu.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               {availablePlayers.map(p => (
                 <button
                   key={p.id}
                   onClick={() => togglePlayer(p.id)}
-                  className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${selectedIds.includes(p.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 font-bold' : 'border-slate-100 dark:border-slate-700'}`}
+                  className={`relative flex items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${selectedIds.includes(p.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 shadow-md shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-600'}`}
                 >
-                  <span className="truncate text-sm">{p.id}</span>
-                  {selectedIds.includes(p.id) && <Check size={16} className="text-blue-500" />}
+                  <span className="truncate font-bold text-sm">{p.id}</span>
+                  {selectedIds.includes(p.id) && (
+                    <div className="absolute top-2 right-2">
+                        <Check size={14} className="text-blue-500" strokeWidth={4} />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest mb-1 opacity-50">Typ hry</label>
-            <select 
-              value={gameType} 
-              onChange={(e) => setGameType(Number(e.target.value))}
-              className="w-full bg-slate-100 dark:bg-slate-700 p-3 rounded-xl font-bold border-none outline-none appearance-none"
-            >
-              {[301, 401, 501, 701, 801].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-black uppercase tracking-widest mb-1 opacity-50">Možnosti</label>
-            <div className="flex flex-col gap-2">
+        {/* Starting Player Section */}
+        {selectedIds.length >= 2 && (
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <div className="flex justify-between items-center mb-3">
+                    <label className="block text-xs font-black uppercase tracking-widest opacity-50">Kdo začíná?</label>
+                    <button 
+                        onClick={handleCoinToss}
+                        disabled={isTossing}
+                        className="flex items-center gap-1 text-[10px] font-black uppercase bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+                    >
+                        <Dices size={14} /> Hod mincí
+                    </button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    {selectedIds.map((id, idx) => (
+                        <button
+                            key={id}
+                            onClick={() => setStartingIndex(idx)}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border-2 ${startingIndex === idx ? 'bg-white dark:bg-slate-800 border-blue-500 text-blue-600 shadow-sm' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                        >
+                            {id}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-4">
+             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Typ hry</label>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                    {[301, 501].map(n => (
+                        <button 
+                            key={n} 
+                            onClick={() => setGameType(n)}
+                            className={`flex-1 py-2 px-3 rounded-lg font-black text-sm transition-all ${gameType === n ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}
+                        >
+                            {n}
+                        </button>
+                    ))}
+                     <select 
+                        value={gameType} 
+                        onChange={(e) => setGameType(Number(e.target.value))}
+                        className={`bg-transparent font-black text-sm outline-none ${[301,501].includes(gameType) ? 'opacity-50' : 'text-blue-500'}`}
+                        >
+                        <option value={401}>401</option>
+                        <option value={701}>701</option>
+                    </select>
+                </div>
+             </div>
+
+             <div className="flex flex-col gap-2">
                <button 
                 onClick={() => setDoubleIn(!doubleIn)}
-                className={`text-[10px] font-black py-1 px-2 rounded-lg border-2 transition-all ${doubleIn ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 opacity-40'}`}
+                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleIn ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
                >
-                 DOUBLE IN
+                 <span>Double In</span>
+                 {doubleIn && <Check size={16} />}
                </button>
                <button 
                 onClick={() => setDoubleOut(!doubleOut)}
-                className={`text-[10px] font-black py-1 px-2 rounded-lg border-2 transition-all ${doubleOut ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 opacity-40'}`}
+                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleOut ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
                >
-                 DOUBLE OUT
+                 <span>Double Out</span>
+                 {doubleOut && <Check size={16} />}
                </button>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest mb-1 opacity-50">Sety k výhře</label>
-            <select 
-              value={targetSets} 
-              onChange={(e) => setTargetSets(Number(e.target.value))}
-              className="w-full bg-slate-100 dark:bg-slate-700 p-3 rounded-xl font-bold border-none outline-none"
-            >
-              {[1, 2, 3, 4, 5, 7, 10].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest mb-1 opacity-50">Legy v setu</label>
-            <select 
-              value={legsPerSet} 
-              onChange={(e) => setLegsPerSet(Number(e.target.value))}
-              className="w-full bg-slate-100 dark:bg-slate-700 p-3 rounded-xl font-bold border-none outline-none"
-            >
-              {[1, 2, 3, 5].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+          <div className="space-y-4">
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Sety k výhře</label>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setTargetSets(Math.max(1, targetSets - 1))} className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-300">-</button>
+                    <span className="text-2xl font-black w-8 text-center">{targetSets}</span>
+                    <button onClick={() => setTargetSets(Math.min(20, targetSets + 1))} className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/30">+</button>
+                </div>
+            </div>
+             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Legy v setu</label>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setLegsPerSet(Math.max(1, legsPerSet - 1))} className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-300">-</button>
+                    <span className="text-2xl font-black w-8 text-center">{legsPerSet}</span>
+                    <button onClick={() => setLegsPerSet(Math.min(20, legsPerSet + 1))} className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/30">+</button>
+                </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <button 
-        onClick={() => startGame(selectedIds)}
-        disabled={selectedIds.length < 2}
-        className={`w-full font-black py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 uppercase tracking-widest ${selectedIds.length < 2 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+      <Button 
+        onClick={() => startGame(selectedIds, startingIndex)}
+        disabled={selectedIds.length < 2 || isTossing}
+        className="w-full text-lg py-4"
+        icon={ChevronRight}
       >
-        Spustit zápas <ChevronRight />
-      </button>
+        SPUSTIT ZÁPAS
+      </Button>
     </div>
   );
 };
@@ -207,32 +334,38 @@ const ScoreBoard = ({
   game, recordLegWin, undoLastMove, resetMatch 
 }) => {
   const currentTotalLegs = game.history?.length || 0;
-  const turnIndex = currentTotalLegs % game.players.length;
+  const turnIndex = (currentTotalLegs + (game.startingIndex || 0)) % game.players.length;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm gap-4">
-        <button onClick={resetMatch} className="text-slate-500 hover:text-blue-500 flex items-center gap-1 transition-colors">
-          <List size={18} /> <span className="text-xs font-black uppercase">MENU</span>
+    <div className="max-w-5xl mx-auto space-y-4 h-full flex flex-col">
+      {/* Top Bar */}
+      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+        <button onClick={resetMatch} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-slate-500">
+          <List size={24} />
         </button>
         
-        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest opacity-60">
-          <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">TYP: {game.gameType || 'X'}</span>
-          <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">BEST OF {game.targetSets} SETS</span>
-          {game.doubleIn && <span className="text-orange-500">DI</span>}
-          {game.doubleOut && <span className="text-orange-500">DO</span>}
+        <div className="flex flex-col items-center">
+            <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-40">Best of {game.targetSets} Sets</div>
+            <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-blue-600 dark:text-blue-400">{game.gameType}</span>
+                <div className="flex gap-1">
+                     {game.doubleIn && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DI</span>}
+                     {game.doubleOut && <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-1.5 rounded">DO</span>}
+                </div>
+            </div>
         </div>
 
         <button 
           onClick={undoLastMove} 
           disabled={!game.history || game.history.length === 0}
-          className={`flex items-center gap-1 transition-colors ${(!game.history || game.history.length === 0) ? 'opacity-30 cursor-not-allowed' : 'hover:text-blue-500'}`}
+          className={`p-2 rounded-xl transition-colors ${(!game.history || game.history.length === 0) ? 'opacity-20 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-500'}`}
         >
-          <Undo2 size={18} /> <span className="text-xs font-black uppercase">ZPĚT</span>
+          <Undo2 size={24} />
         </button>
       </div>
 
-      <div className={`grid gap-4 ${game.players.length > 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
+      {/* Players Grid */}
+      <div className={`grid gap-4 flex-1 ${game.players.length > 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'} content-start`}>
         {game.players.map((playerName, idx) => {
           const isWinning = game.scores[idx].sets === Math.max(...game.scores.map(s => s.sets)) && game.scores[idx].sets > 0;
           const isOnTurn = turnIndex === idx;
@@ -240,27 +373,59 @@ const ScoreBoard = ({
           return (
             <div 
               key={idx}
-              className={`relative p-6 rounded-3xl transition-all border-4 cursor-pointer active:scale-95 ${isOnTurn ? 'border-orange-500 shadow-xl scale-[1.02]' : 'border-transparent shadow-sm'} ${isWinning ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-800'}`}
+              className={`relative overflow-hidden rounded-[2rem] transition-all duration-300 cursor-pointer select-none group
+                ${isOnTurn 
+                    ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-2xl shadow-blue-500/30 scale-[1.01] ring-4 ring-blue-200 dark:ring-blue-900' 
+                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700'
+                }
+              `}
               onClick={() => recordLegWin(idx)}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-2xl font-black truncate pr-2 uppercase italic">{playerName}</h3>
-                  <p className="text-[10px] opacity-40 font-black uppercase tracking-widest">Hráč {idx + 1}</p>
+              {/* Background Decoration */}
+              {isOnTurn && (
+                  <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-10 -translate-y-10">
+                      <Target size={200} />
+                  </div>
+              )}
+
+              <div className="p-6 sm:p-8 flex flex-col h-full justify-between relative z-10">
+                {/* Header */}
+                <div className="flex justify-between items-start">
+                    <div>
+                        <div className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${isOnTurn ? 'text-blue-200' : 'text-slate-400'}`}>
+                            Hráč {idx + 1}
+                        </div>
+                        <h3 className="text-2xl sm:text-4xl font-black truncate pr-2 italic tracking-tight">{playerName}</h3>
+                    </div>
+                    {isOnTurn && <div className="animate-pulse"><Target size={32} className="text-white" /></div>}
                 </div>
-                {isOnTurn && (
-                  <div className="bg-orange-500 text-white p-2 rounded-full animate-pulse shadow-lg">
-                    <Target size={24} />
-                  </div>
-                )}
-              </div>
-              <div className="flex items-end gap-4">
-                <div className="text-8xl font-black text-blue-600 dark:text-blue-400 leading-none">{game.scores[idx].sets}</div>
-                <div className="mb-2">
-                  <div className="text-[10px] font-black uppercase tracking-widest opacity-40 text-blue-500">Sety</div>
-                  <div className="text-4xl font-black text-slate-400 leading-none">
-                    {game.scores[idx].legs} <span className="text-[10px] opacity-50">LEGS</span>
-                  </div>
+
+                {/* Score Area */}
+                <div className="flex items-end justify-between mt-8">
+                    {/* SETS - Main Counter */}
+                    <div className="flex flex-col">
+                         <span className={`text-[10px] font-black uppercase tracking-widest mb-[-5px] ml-1 ${isOnTurn ? 'text-blue-200' : 'text-slate-400'}`}>Sety</span>
+                         <span className={`text-7xl sm:text-8xl font-black leading-none tracking-tighter ${isOnTurn ? 'text-white drop-shadow-lg' : 'text-slate-900 dark:text-white'}`}>
+                             {game.scores[idx].sets}
+                         </span>
+                    </div>
+
+                    {/* LEGS - Secondary Counter */}
+                    <div className={`flex flex-col items-end px-4 py-2 rounded-2xl ${isOnTurn ? 'bg-blue-500/30 backdrop-blur-sm' : 'bg-slate-100 dark:bg-slate-900'}`}>
+                         <span className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isOnTurn ? 'text-blue-100' : 'text-slate-400'}`}>Legy ({game.legsPerSet})</span>
+                         <div className="flex items-center gap-3">
+                             <span className={`text-4xl sm:text-5xl font-black leading-none ${isOnTurn ? 'text-white' : 'text-slate-500'}`}>
+                                 {game.scores[idx].legs}
+                             </span>
+                         </div>
+                    </div>
+                </div>
+
+                {/* Leg Progress Dots (Visual Aid) */}
+                <div className="flex gap-1 mt-6 opacity-60">
+                    {Array.from({length: game.legsPerSet}).map((_, i) => (
+                        <div key={i} className={`h-2 flex-1 rounded-full transition-all ${i < game.scores[idx].legs ? (isOnTurn ? 'bg-white' : 'bg-blue-500') : (isOnTurn ? 'bg-blue-900' : 'bg-slate-200 dark:bg-slate-700')}`} />
+                    ))}
                 </div>
               </div>
             </div>
@@ -279,7 +444,11 @@ const App = () => {
   const [players, setPlayers] = useState([]);
   const [activeGame, setActiveGame] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Theme State
+  const [darkMode, setDarkMode] = useState(false);
 
+  // Settings State
   const [tSets, setTSets] = useState(3);
   const [lPerSet, setLPerSet] = useState(3);
   const [gType, setGType] = useState(501);
@@ -292,8 +461,11 @@ const App = () => {
       try {
         const loadedGames = await localforage.getItem('games') || [];
         const loadedPlayers = await localforage.getItem('players') || [];
+        const savedTheme = await localforage.getItem('darkMode');
+        
         setGames(loadedGames);
         setPlayers(loadedPlayers);
+        setDarkMode(savedTheme === true);
       } catch (err) {
         console.error("Chyba při načítání dat:", err);
       } finally {
@@ -302,6 +474,16 @@ const App = () => {
     };
     loadData();
   }, []);
+
+  // --- Theme Effect ---
+  useEffect(() => {
+     if (darkMode) {
+       document.documentElement.classList.add('dark');
+     } else {
+       document.documentElement.classList.remove('dark');
+     }
+     localforage.setItem('darkMode', darkMode);
+  }, [darkMode]);
 
   // --- Ukládání dat (pomocné funkce) ---
   const savePlayers = async (newPlayers) => {
@@ -336,14 +518,11 @@ const App = () => {
         return;
     }
 
-    // 1. Aktualizace seznamu hráčů (přenést statistiky)
-    const playerToRename = players.find(p => p.id === oldName);
     const updatedPlayers = players.map(p => 
         p.id === oldName ? { ...p, id: newName } : p
     );
     await savePlayers(updatedPlayers);
 
-    // 2. Aktualizace historie her
     const updatedGames = games.map(g => {
         if (g.players && g.players.includes(oldName)) {
             const updatedPlayerNames = g.players.map(p => p === oldName ? newName : p);
@@ -374,7 +553,6 @@ const App = () => {
       createdAt: Date.now()
     };
 
-    // Aktualizace statistik - počet zápasů
     const updatedPlayers = players.map(p => {
         if (selectedPlayerIds.includes(p.id)) {
             return { ...p, matches: (p.matches || 0) + 1 };
@@ -383,7 +561,6 @@ const App = () => {
     });
     await savePlayers(updatedPlayers);
     
-    // Přidání hry
     await saveGames([...games, newGame]);
 
     setActiveGame(newGame);
@@ -394,7 +571,6 @@ const App = () => {
     if (!activeGame || activeGame.status === 'finished') return;
 
     const nextScores = JSON.parse(JSON.stringify(activeGame.scores));
-    // Uložíme hlubokou kopii aktuálního stavu do historie pro UNDO
     const nextHistory = [...(activeGame.history || []), JSON.parse(JSON.stringify(activeGame.scores))];
     
     nextScores[playerIdx].legs += 1;
@@ -410,7 +586,6 @@ const App = () => {
       nextStatus = 'finished';
       winner = activeGame.players[playerIdx];
       
-      // Aktualizace statistik - výhry
       const updatedPlayers = players.map(p => {
           if (p.id === winner) {
               return { ...p, wins: (p.wins || 0) + 1 };
@@ -422,7 +597,6 @@ const App = () => {
 
     const updatedGame = { ...activeGame, scores: nextScores, history: nextHistory, status: nextStatus, winner };
     
-    // Update active game locally and in storage
     setActiveGame(updatedGame);
     const updatedGamesList = games.map(g => g.id === activeGame.id ? updatedGame : g);
     await saveGames(updatedGamesList);
@@ -437,7 +611,6 @@ const App = () => {
     const oldWinner = activeGame.winner;
 
     if (wasFinished && oldWinner) {
-      // Revert statistic win
       const updatedPlayers = players.map(p => {
           if (p.id === oldWinner) {
               return { ...p, wins: Math.max(0, (p.wins || 0) - 1) };
@@ -477,17 +650,44 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 font-sans select-none pb-20">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-8 pt-4">
-          <h1 className="text-5xl font-black tracking-tighter flex items-center justify-center gap-3 italic">
-            <span className="text-red-600 drop-shadow-lg">🎯</span> DARTS TRACKER
-          </h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] opacity-30 mt-2">Professional Score System</p>
-        </header>
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans select-none transition-colors duration-500`}>
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-24">
+        
+        {/* Header */}
+        {view !== 'board' && (
+            <header className="flex justify-between items-center mb-8 pt-2">
+            <div>
+                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter flex items-center gap-2 italic">
+                    <span className="text-red-600 drop-shadow-lg">🎯</span> 
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">DARTS</span>
+                </h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-1">Tracker Pro</p>
+            </div>
+            <button 
+                onClick={() => setView('settings')}
+                className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-blue-500"
+            >
+                <Settings size={24} />
+            </button>
+            </header>
+        )}
 
         {view === 'list' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-10 animate-in fade-in duration-500">
+            {/* Stats Summary - New addition for "Graphics" */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-5 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10"><Trophy size={80} /></div>
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Odehráno her</p>
+                    <p className="text-4xl font-black">{games.length}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5"><Users size={80} /></div>
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-1">Aktivní hráči</p>
+                    <p className="text-4xl font-black text-slate-800 dark:text-slate-200">{players.length}</p>
+                </div>
+            </div>
+
             <PlayerManager 
               players={players} 
               onAdd={addPlayer} 
@@ -495,63 +695,55 @@ const App = () => {
               onRename={renamePlayer}
             />
             
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-black flex items-center gap-2 uppercase tracking-tight"><History className="text-blue-500" /> Poslední hry</h2>
-              <button 
-                onClick={() => setView('setup')} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black flex items-center gap-2 transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs"
-              >
-                <Plus size={18} /> NOVÝ ZÁPAS
-              </button>
-            </div>
-
-            <div className="grid gap-3">
-              {games.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 opacity-50">
-                  <p className="text-xs font-black opacity-30 uppercase tracking-widest">ŽÁDNÁ HISTORIE ZÁPASŮ</p>
-                </div>
-              ) : (
-                [...games].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 10).map(g => (
-                  <div key={g.id} className={`bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm flex items-center justify-between border-l-8 transition-all hover:shadow-md ${g.status === 'finished' ? 'border-slate-300' : 'border-blue-500'}`}>
-                    <div className="cursor-pointer flex-1 min-w-0" onClick={() => { setActiveGame(g); setView('board'); }}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-600 px-1.5 py-0.5 rounded uppercase">{g.gameType || 'X'}</span>
-                        <div className="font-black text-lg truncate uppercase italic tracking-tight">{g.players?.join(' vs ') || 'ZÁPAS'}</div>
-                      </div>
-                      <div className="text-[10px] opacity-40 font-black tracking-widest uppercase">
-                        {g.createdAt ? new Date(g.createdAt).toLocaleDateString() : 'Neznámé datum'} • {g.status === 'finished' ? 'DOKONČENO' : 'PROBÍHÁ'}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <button onClick={() => { setActiveGame(g); setView('board'); }} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-xl hover:text-blue-500 transition-colors shadow-sm"><Play size={20} /></button>
-                      <button onClick={() => deleteGame(g.id)} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-xl hover:text-red-500 transition-colors shadow-sm"><Trash2 size={20} /></button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {players.length > 0 && (
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <h3 className="text-lg font-black mb-6 flex items-center gap-2 uppercase tracking-widest"><BarChart3 size={20} className="text-orange-500" /> Síň slávy</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {players.sort((a,b) => b.wins - a.wins).map(p => (
-                    <div key={p.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
-                      <div className="flex justify-between items-center relative z-10">
-                        <span className="truncate pr-2 font-black text-lg uppercase italic">{p.id}</span>
-                        <div className="text-blue-600 dark:text-blue-400 font-black text-2xl tracking-tighter">{p.wins}V</div>
-                      </div>
-                      <div className="text-[10px] font-black opacity-40 uppercase tracking-[0.2em] mt-2 flex justify-between">
-                        <span>ZÁPASY: {p.matches || 0}</span>
-                        <span>{p.matches > 0 ? Math.round((p.wins/p.matches)*100) : 0}% WIN RATE</span>
-                      </div>
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700"></div>
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-end px-2">
+                 <h2 className="text-xl font-black flex items-center gap-2 uppercase tracking-tight opacity-80"><History className="text-blue-500" /> Historie</h2>
               </div>
-            )}
+
+              <div className="grid gap-4">
+                {games.length === 0 ? (
+                  <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 opacity-50">
+                    <p className="text-xs font-black opacity-40 uppercase tracking-widest">Zatím žádné zápasy</p>
+                  </div>
+                ) : (
+                  [...games].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5).map(g => (
+                    <div key={g.id} className={`bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between group transition-all hover:shadow-md border border-slate-100 dark:border-slate-800`}>
+                      <div className="cursor-pointer flex-1 min-w-0" onClick={() => { setActiveGame(g); setView('board'); }}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${g.status === 'finished' ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
+                              {g.status === 'finished' ? 'Dokončeno' : 'Hraje se'}
+                          </span>
+                          <span className="text-[10px] font-black text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">{g.gameType}</span>
+                        </div>
+                        <div className="font-black text-lg truncate uppercase italic tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {g.players?.join(' vs ') || 'ZÁPAS'}
+                        </div>
+                        <div className="text-[10px] opacity-40 font-bold mt-1">
+                          {g.createdAt ? new Date(g.createdAt).toLocaleDateString() : 'Neznámé datum'}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button onClick={() => deleteGame(g.id)} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-xl hover:bg-red-50 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
+        )}
+        
+        {/* Floating Action Button for New Game */}
+        {view === 'list' && (
+             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm px-4">
+                <Button onClick={() => setView('setup')} className="w-full text-lg shadow-2xl shadow-blue-600/40 rounded-2xl py-4" icon={Play}>
+                    NOVÝ ZÁPAS
+                </Button>
+            </div>
+        )}
+
+        {view === 'settings' && (
+            <SettingsScreen darkMode={darkMode} setDarkMode={setDarkMode} onBack={() => setView('list')} />
         )}
 
         {view === 'setup' && (
@@ -570,9 +762,9 @@ const App = () => {
         )}
 
         {view === 'board' && activeGame && (
-          <div className="animate-in fade-in duration-300 space-y-6">
+          <div className="animate-in fade-in duration-300 space-y-6 h-full">
             {activeGame.status === 'finished' ? (
-              <div className="max-w-md mx-auto text-center space-y-8 bg-white dark:bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl border-b-8 border-yellow-500/50 relative overflow-hidden">
+              <div className="max-w-md mx-auto text-center space-y-8 bg-white dark:bg-slate-800 p-8 sm:p-10 rounded-[2.5rem] shadow-2xl border-b-8 border-yellow-500/50 relative overflow-hidden mt-10">
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-white to-yellow-400"></div>
                 <div className="relative inline-block">
                   <Trophy size={100} className="text-yellow-400 animate-bounce drop-shadow-xl" />
@@ -580,14 +772,16 @@ const App = () => {
                 </div>
                 <div className="space-y-2">
                   <h2 className="text-xs font-black italic tracking-[0.5em] opacity-40 uppercase">Vítěz zápasu</h2>
-                  <p className="text-6xl font-black text-blue-600 dark:text-blue-400 break-words drop-shadow-md uppercase italic tracking-tighter">{activeGame.winner}</p>
+                  <p className="text-5xl sm:text-6xl font-black text-blue-600 dark:text-blue-400 break-words drop-shadow-md uppercase italic tracking-tighter">{activeGame.winner}</p>
                 </div>
-                <div className="py-4 px-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl font-black text-5xl tracking-widest text-slate-400">
-                   {activeGame.scores.map(s => s.sets).join(' : ')}
+                <div className="py-6 px-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl font-black text-6xl tracking-widest text-slate-400 border border-slate-100 dark:border-slate-800">
+                   {activeGame.scores.map(s => s.sets).join('-')}
                 </div>
                 <div className="space-y-4 pt-6">
-                  <button onClick={() => setView('list')} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black transition-all shadow-xl active:scale-95 uppercase tracking-[0.2em] text-sm">Zavřít</button>
-                  <button onClick={undoLastMove} className="flex items-center justify-center gap-2 text-[10px] font-black uppercase opacity-40 hover:opacity-100 mx-auto transition-opacity tracking-[0.3em]">
+                  <Button onClick={() => setView('list')} className="w-full text-lg py-4 rounded-2xl">
+                    Zavřít
+                  </Button>
+                  <button onClick={undoLastMove} className="flex items-center justify-center gap-2 text-[10px] font-black uppercase opacity-40 hover:opacity-100 mx-auto transition-opacity tracking-[0.3em] py-4">
                     <Undo2 size={14} /> Opravit výsledek
                   </button>
                 </div>
