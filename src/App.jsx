@@ -140,195 +140,645 @@ const PlayerManager = ({ players, onAdd, onDelete, onRename }) => {
   );
 };
 
+// --- Konstanty her ---
+
+
+
+const GAME_CATEGORIES = [
+
+  { id: '01', name: '01 Games (301-901)', games: [
+
+    { id: 1, name: '301' }, { id: 2, name: '401' }, { id: 3, name: '501' }, 
+
+    { id: 4, name: '601' }, { id: 5, name: '701' }, { id: 6, name: '801' }, { id: 7, name: '901' }
+
+  ]},
+
+  { id: 'cricket', name: 'Cricket', games: [
+
+    { id: 8, name: 'CRICKET' }, { id: 9, name: 'NO-SCORE CRICKET' }, 
+
+    { id: 10, name: 'SCRAM' }, { id: 11, name: 'CUT-THROAT CRICKET' }
+
+  ]},
+
+  { id: 'countup', name: 'Count-Up', games: [
+
+    { id: 12, name: 'COUNT-UP 300' }, { id: 13, name: 'COUNT-UP 400' }, { id: 14, name: 'COUNT-UP 500' },
+
+    { id: 15, name: 'COUNT-UP 600' }, { id: 16, name: 'COUNT-UP 700' }, { id: 17, name: 'COUNT-UP 800' },
+
+    { id: 18, name: 'COUNT-UP 900' }, { id: 19, name: 'COUNT-UP 999' }
+
+  ]},
+
+  { id: 'highscore', name: 'High Score', games: [
+
+    { id: 20, name: 'HIGH SCORE 3R' }, { id: 21, name: 'HIGH SCORE 4R' }, { id: 22, name: 'HIGH SCORE 5R' },
+
+    { id: 23, name: 'HIGH SCORE 6R' }, { id: 24, name: 'HIGH SCORE 7R' }, { id: 25, name: 'HIGH SCORE 8R' },
+
+    { id: 26, name: 'HIGH SCORE 9R' }, { id: 27, name: 'HIGH SCORE 10R' }, { id: 28, name: 'HIGH SCORE 11R' },
+
+    { id: 29, name: 'HIGH SCORE 12R' }, { id: 30, name: 'HIGH SCORE 13R' }, { id: 31, name: 'HIGH SCORE 14R' }
+
+  ]},
+
+  { id: 'clock', name: 'Round The Clock', games: [
+
+    { id: 32, name: 'CLOCK 1-5' }, { id: 33, name: 'CLOCK 1-10' }, { id: 34, name: 'CLOCK 1-15' }, { id: 35, name: 'CLOCK 1-20' },
+
+    { id: 36, name: 'CLOCK 20-1' }, { id: 37, name: 'CLOCK 20-5' }, { id: 38, name: 'CLOCK 20-10' }, { id: 39, name: 'CLOCK 20-15' },
+
+    { id: 40, name: 'CLOCK 5-1' }, { id: 41, name: 'CLOCK 10-1' }, { id: 42, name: 'CLOCK 15-1' }, { id: 43, name: 'CLOCK 10-15' } // Custom mappings for simplicity
+
+  ]},
+
+  { id: 'other', name: 'Ostatní hry', games: [
+
+    { id: 44, name: 'KILLER' }, { id: 45, name: 'DOUBLE DOWN' }, { id: 46, name: 'FORTY ONE' },
+
+    { id: 47, name: 'ALL FIVES 51' }, { id: 48, name: 'ALL FIVES 61' }, { id: 49, name: 'ALL FIVES 71' },
+
+    { id: 50, name: 'ALL FIVES 81' }, { id: 51, name: 'ALL FIVES 91' },
+
+    { id: 52, name: 'SHANGHAI 1' }, { id: 53, name: 'SHANGHAI 5' }, { id: 54, name: 'SHANGHAI 10' }, { id: 55, name: 'SHANGHAI 15' },
+
+    { id: 56, name: 'GOLF 9H' }, { id: 57, name: 'GOLF 18H' },
+
+    { id: 58, name: 'FOOTBALL' }, { id: 59, name: 'BOWLING' },
+
+    { id: 60, name: 'BASEBALL 6' }, { id: 61, name: 'BASEBALL 9' },
+
+    { id: 62, name: 'STEEPLECHASE' }, { id: 63, name: 'SHOVE A PENNY' },
+
+    { id: 64, name: 'NINE-DART CENTURY' }, { id: 65, name: 'GREEN VS. RED' }
+
+  ]}
+
+];
+
+
+
+// --- Komponenty ---
+
+
+
 const SetupScreen = ({ 
+
   availablePlayers, 
+
   targetSets, setTargetSets, 
+
   legsPerSet, setLegsPerSet, 
+
   gameType, setGameType,
+
   doubleIn, setDoubleIn,
+
   doubleOut, setDoubleOut,
+
   startGame,
+
   onCancel
+
 }) => {
+
   const [selectedIds, setSelectedIds] = useState([]);
+
   const [startingIndex, setStartingIndex] = useState(0);
+
   const [isTossing, setIsTossing] = useState(false);
 
-  const togglePlayer = (id) => {
-    if (selectedIds.includes(id)) {
-      const newSelected = selectedIds.filter(i => i !== id);
-      setSelectedIds(newSelected);
-      if (startingIndex >= newSelected.length) setStartingIndex(0);
-    } else if (selectedIds.length < 4) {
-      setSelectedIds([...selectedIds, id]);
+  const [coinTossMode, setCoinTossMode] = useState('random'); 
+
+  const [headsPlayerIndex, setHeadsPlayerIndex] = useState(0);
+
+  
+
+  // Game Selection State
+
+  const [selectedCategory, setSelectedCategory] = useState('01');
+
+  const [selectedGameId, setSelectedGameId] = useState(3); // Default 501
+
+
+
+  // Effect to update parent gameType when selection changes
+
+  useEffect(() => {
+
+    const category = GAME_CATEGORIES.find(c => c.id === selectedCategory);
+
+    const game = category?.games.find(g => g.id === Number(selectedGameId));
+
+    if (game) {
+
+        setGameType(`${game.id} ${game.name}`);
+
     }
+
+  }, [selectedCategory, selectedGameId, setGameType]);
+
+
+
+  const togglePlayer = (id) => {
+
+    if (selectedIds.includes(id)) {
+
+      const newSelected = selectedIds.filter(i => i !== id);
+
+      setSelectedIds(newSelected);
+
+      if (startingIndex >= newSelected.length) setStartingIndex(0);
+
+      if (headsPlayerIndex >= newSelected.length) setHeadsPlayerIndex(0);
+
+    } else if (selectedIds.length < 4) {
+
+      setSelectedIds([...selectedIds, id]);
+
+    }
+
   };
+
+
 
   const handleCoinToss = () => {
+
     if (selectedIds.length < 2) return;
+
     setIsTossing(true);
+
     let interval;
+
     let counter = 0;
+
     
-    // Simple visual shuffling effect
+
     interval = setInterval(() => {
+
         setStartingIndex(prev => (prev + 1) % selectedIds.length);
+
         counter++;
-        if (counter > 10) {
+
+        if (counter > 15) {
+
             clearInterval(interval);
-            const winnerIndex = Math.floor(Math.random() * selectedIds.length);
-            setStartingIndex(winnerIndex);
+
+            let finalWinnerIndex;
+
+            if (coinTossMode === 'assign' && selectedIds.length === 2) {
+
+                const tossResult = Math.random() < 0.5 ? 0 : 1; 
+
+                finalWinnerIndex = (tossResult === 0) ? headsPlayerIndex : (1 - headsPlayerIndex);
+
+            } else {
+
+                finalWinnerIndex = Math.floor(Math.random() * selectedIds.length);
+
+            }
+
+            setStartingIndex(finalWinnerIndex);
+
             setIsTossing(false);
+
         }
-    }, 100);
+
+    }, 80);
+
   };
 
+
+
+  const isX01 = selectedCategory === '01';
+
+
+
   return (
-    <div className="max-w-xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-8 animate-in slide-in-from-bottom-10 duration-500">
+
+    <div className="max-w-xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-8 animate-in slide-in-from-bottom-10 duration-500 max-h-[90vh] overflow-y-auto custom-scrollbar">
+
       <div className="flex justify-between items-center">
+
         <div className="flex items-center gap-3">
+
           <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-xl">
+
              <Settings className="text-blue-600 dark:text-blue-400" size={24} />
+
           </div>
+
           <h2 className="text-2xl font-black uppercase tracking-tighter">Nastavení zápasu</h2>
+
         </div>
+
         <button onClick={onCancel} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all">
+
           <X size={28} />
+
         </button>
+
       </div>
+
       
-      <div className="space-y-8">
+
+      <div className="space-y-6">
+
         <div>
+
           <label className="flex justify-between items-center text-xs font-black uppercase tracking-widest mb-3 opacity-60">
+
             <span>Hráči ({selectedIds.length}/4)</span>
+
             {selectedIds.length < 2 && <span className="text-red-500">Vyberte min. 2</span>}
+
           </label>
+
           {availablePlayers.length === 0 ? (
+
             <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-2xl text-center border border-red-100 dark:border-red-900/30">
+
                <p className="text-sm text-red-600 dark:text-red-400 font-bold">Nejdříve musíte vytvořit hráče v menu.</p>
+
             </div>
+
           ) : (
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+
               {availablePlayers.map(p => (
+
                 <button
+
                   key={p.id}
+
                   onClick={() => togglePlayer(p.id)}
+
                   className={`relative flex items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${selectedIds.includes(p.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 shadow-md shadow-blue-500/10' : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-600'}`}
+
                 >
+
                   <span className="truncate font-bold text-sm">{p.id}</span>
+
                   {selectedIds.includes(p.id) && (
+
                     <div className="absolute top-2 right-2">
+
                         <Check size={14} className="text-blue-500" strokeWidth={4} />
+
                     </div>
+
                   )}
+
                 </button>
+
               ))}
+
             </div>
+
           )}
+
         </div>
+
+
 
         {/* Starting Player Section */}
+
         {selectedIds.length >= 2 && (
+
             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+
                 <div className="flex justify-between items-center mb-3">
+
                     <label className="block text-xs font-black uppercase tracking-widest opacity-50">Kdo začíná?</label>
+
                     <button 
+
                         onClick={handleCoinToss}
+
                         disabled={isTossing}
+
                         className="flex items-center gap-1 text-[10px] font-black uppercase bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+
                     >
+
                         <Dices size={14} /> Hod mincí
+
                     </button>
+
                 </div>
+
+
+
+                {selectedIds.length === 2 && (
+
+                    <div className="mb-4">
+
+                        <div className="flex gap-4">
+
+                            <label className="flex items-center gap-2">
+
+                                <input 
+
+                                    type="radio" 
+
+                                    name="coinTossMode" 
+
+                                    value="random" 
+
+                                    checked={coinTossMode === 'random'} 
+
+                                    onChange={() => setCoinTossMode('random')}
+
+                                    className="form-radio text-blue-600"
+
+                                />
+
+                                <span className="text-xs font-bold uppercase">Náhodně</span>
+
+                            </label>
+
+                            <label className="flex items-center gap-2">
+
+                                <input 
+
+                                    type="radio" 
+
+                                    name="coinTossMode" 
+
+                                    value="assign" 
+
+                                    checked={coinTossMode === 'assign'} 
+
+                                    onChange={() => setCoinTossMode('assign')}
+
+                                    className="form-radio text-blue-600"
+
+                                />
+
+                                <span className="text-xs font-bold uppercase">Přiřadit</span>
+
+                            </label>
+
+                        </div>
+
+
+
+                        {coinTossMode === 'assign' && selectedIds.length === 2 && (
+
+                            <div className="flex justify-around items-center mt-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+
+                                <label className="flex flex-col items-center gap-1 cursor-pointer">
+
+                                    <input 
+
+                                        type="radio" 
+
+                                        name="headsPlayer" 
+
+                                        checked={headsPlayerIndex === 0} 
+
+                                        onChange={() => setHeadsPlayerIndex(0)} 
+
+                                        className="form-radio text-blue-600"
+
+                                    />
+
+                                    <span className="font-bold text-xs">{selectedIds[0]} (Panna)</span>
+
+                                </label>
+
+                                <label className="flex flex-col items-center gap-1 cursor-pointer">
+
+                                    <input 
+
+                                        type="radio" 
+
+                                        name="headsPlayer" 
+
+                                        checked={headsPlayerIndex === 1} 
+
+                                        onChange={() => setHeadsPlayerIndex(1)} 
+
+                                        className="form-radio text-blue-600"
+
+                                    />
+
+                                    <span className="font-bold text-xs">{selectedIds[1]} (Orel)</span>
+
+                                </label>
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+                )}
+
+                
+
                 <div className="flex gap-2 flex-wrap">
+
                     {selectedIds.map((id, idx) => (
+
                         <button
+
                             key={id}
+
                             onClick={() => setStartingIndex(idx)}
+
                             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border-2 ${startingIndex === idx ? 'bg-white dark:bg-slate-800 border-blue-500 text-blue-600 shadow-sm' : 'border-transparent opacity-50 hover:opacity-100'}`}
+
                         >
+
                             {id}
+
                         </button>
+
                     ))}
+
                 </div>
+
             </div>
+
         )}
 
+
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
           <div className="space-y-4">
-             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Typ hry</label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                    {[301, 501].map(n => (
-                        <button 
-                            key={n} 
-                            onClick={() => setGameType(n)}
-                            className={`flex-1 py-2 px-3 rounded-lg font-black text-sm transition-all ${gameType === n ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}
-                        >
-                            {n}
-                        </button>
-                    ))}
-                     <select 
-                        value={gameType} 
-                        onChange={(e) => setGameType(Number(e.target.value))}
-                        className={`bg-transparent font-black text-sm outline-none ${[301,501].includes(gameType) ? 'opacity-50' : 'text-blue-500'}`}
-                        >
-                        <option value={401}>401</option>
-                        <option value={701}>701</option>
+
+             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+
+                <div>
+
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Kategorie</label>
+
+                    <select 
+
+                        value={selectedCategory} 
+
+                        onChange={(e) => {
+
+                            setSelectedCategory(e.target.value);
+
+                            const firstGame = GAME_CATEGORIES.find(c => c.id === e.target.value)?.games[0];
+
+                            if(firstGame) setSelectedGameId(firstGame.id);
+
+                        }}
+
+                        className="w-full bg-slate-200 dark:bg-slate-800 p-3 rounded-xl font-bold border-none outline-none text-sm"
+
+                    >
+
+                        {GAME_CATEGORIES.map(cat => (
+
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+
+                        ))}
+
                     </select>
+
                 </div>
+
+                <div>
+
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Hra</label>
+
+                    <select 
+
+                        value={selectedGameId} 
+
+                        onChange={(e) => setSelectedGameId(Number(e.target.value))}
+
+                        className="w-full bg-slate-200 dark:bg-slate-800 p-3 rounded-xl font-bold border-none outline-none text-sm"
+
+                    >
+
+                        {GAME_CATEGORIES.find(c => c.id === selectedCategory)?.games.map(g => (
+
+                            <option key={g.id} value={g.id}>{g.id}. {g.name}</option>
+
+                        ))}
+
+                    </select>
+
+                </div>
+
              </div>
 
-             <div className="flex flex-col gap-2">
-               <button 
-                onClick={() => setDoubleIn(!doubleIn)}
-                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleIn ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
-               >
-                 <span>Double In</span>
-                 {doubleIn && <Check size={16} />}
-               </button>
-               <button 
-                onClick={() => setDoubleOut(!doubleOut)}
-                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleOut ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
-               >
-                 <span>Double Out</span>
-                 {doubleOut && <Check size={16} />}
-               </button>
-            </div>
+
+
+             {isX01 && (
+
+                 <div className="flex flex-col gap-2">
+
+                   <button 
+
+                    onClick={() => setDoubleIn(!doubleIn)}
+
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleIn ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
+
+                   >
+
+                     <span>Double In</span>
+
+                     {doubleIn && <Check size={16} />}
+
+                   </button>
+
+                   <button 
+
+                    onClick={() => setDoubleOut(!doubleOut)}
+
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${doubleOut ? 'border-orange-500 bg-orange-500/10 text-orange-500' : 'border-slate-200 dark:border-slate-700 opacity-60'}`}
+
+                   >
+
+                     <span>Double Out</span>
+
+                     {doubleOut && <Check size={16} />}
+
+                   </button>
+
+                </div>
+
+             )}
+
           </div>
+
+
 
           <div className="space-y-4">
+
             <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+
                 <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Sety k výhře</label>
+
                 <div className="flex items-center gap-4">
+
                     <button onClick={() => setTargetSets(Math.max(1, targetSets - 1))} className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-300">-</button>
+
                     <span className="text-2xl font-black w-8 text-center">{targetSets}</span>
+
                     <button onClick={() => setTargetSets(Math.min(20, targetSets + 1))} className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/30">+</button>
+
                 </div>
+
             </div>
+
              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+
                 <label className="block text-xs font-black uppercase tracking-widest mb-2 opacity-50">Legy v setu</label>
+
                 <div className="flex items-center gap-4">
+
                     <button onClick={() => setLegsPerSet(Math.max(1, legsPerSet - 1))} className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-300">-</button>
+
                     <span className="text-2xl font-black w-8 text-center">{legsPerSet}</span>
+
                     <button onClick={() => setLegsPerSet(Math.min(20, legsPerSet + 1))} className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/30">+</button>
+
                 </div>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
 
+
+
       <Button 
+
         onClick={() => startGame(selectedIds, startingIndex)}
+
         disabled={selectedIds.length < 2 || isTossing}
+
         className="w-full text-lg py-4"
+
         icon={ChevronRight}
+
       >
+
         SPUSTIT ZÁPAS
+
       </Button>
+
     </div>
+
   );
+
 };
+
+
 
 const ScoreBoard = ({ 
   game, recordLegWin, undoLastMove, resetMatch 
