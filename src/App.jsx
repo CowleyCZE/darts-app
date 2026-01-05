@@ -436,6 +436,58 @@ const ScoreBoard = ({
   );
 };
 
+const MatchDetail = ({ game, onClose }) => {
+  if (!game) return null;
+
+  return (
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-8 animate-in slide-in-from-right duration-300">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+            <History className="text-blue-500" /> Detail zápasu
+        </h2>
+        <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            <X size={24} />
+        </button>
+      </div>
+
+      <div className="text-center space-y-2 py-4">
+         <p className="text-xs font-black uppercase tracking-widest opacity-40">Výsledek</p>
+         <div className="flex justify-center items-center gap-8">
+            <div className={`text-right ${game.scores[0].sets > game.scores[1].sets ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                <p className="text-2xl font-black">{game.players[0]}</p>
+                <p className="text-6xl font-black leading-none">{game.scores[0].sets}</p>
+            </div>
+            <div className="text-2xl font-black opacity-20">:</div>
+            <div className={`text-left ${game.scores[1].sets > game.scores[0].sets ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                <p className="text-2xl font-black">{game.players[1]}</p>
+                <p className="text-6xl font-black leading-none">{game.scores[1].sets}</p>
+            </div>
+         </div>
+      </div>
+
+      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3">
+          <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-2">Informace</p>
+          <div className="flex justify-between text-sm">
+              <span className="opacity-60">Datum:</span>
+              <span className="font-bold">{new Date(game.createdAt).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+              <span className="opacity-60">Typ hry:</span>
+              <span className="font-bold">{game.gameType} {game.doubleIn ? 'DI' : ''}{game.doubleOut ? 'DO' : ''}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+              <span className="opacity-60">Formát:</span>
+              <span className="font-bold">Best of {game.targetSets} Sets ({game.legsPerSet} legs)</span>
+          </div>
+           <div className="flex justify-between text-sm">
+              <span className="opacity-60">Délka:</span>
+              <span className="font-bold">{game.history ? game.history.length : 0} odehraných legů</span>
+          </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Hlavní Aplikace ---
 
 const App = () => {
@@ -708,7 +760,7 @@ const App = () => {
                 ) : (
                   [...games].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5).map(g => (
                     <div key={g.id} className={`bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between group transition-all hover:shadow-md border border-slate-100 dark:border-slate-800`}>
-                      <div className="cursor-pointer flex-1 min-w-0" onClick={() => { setActiveGame(g); setView('board'); }}>
+                      <div className="cursor-pointer flex-1 min-w-0" onClick={() => { setActiveGame(g); setView(g.status === 'finished' ? 'detail' : 'board'); }}>
                         <div className="flex items-center gap-3 mb-2">
                           <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${g.status === 'finished' ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-600 dark:bg-green-900/30'}`}>
                               {g.status === 'finished' ? 'Dokončeno' : 'Hraje se'}
@@ -744,6 +796,10 @@ const App = () => {
 
         {view === 'settings' && (
             <SettingsScreen darkMode={darkMode} setDarkMode={setDarkMode} onBack={() => setView('list')} />
+        )}
+
+        {view === 'detail' && activeGame && (
+            <MatchDetail game={activeGame} onClose={() => { setActiveGame(null); setView('list'); }} />
         )}
 
         {view === 'setup' && (
