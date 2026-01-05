@@ -1,16 +1,56 @@
-# React + Vite
+# 🎯 Darts Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Jednoduchá a intuitivní aplikace pro sledování skóre v šipkách, která umožňuje hráčům spravovat statistiky a historii zápasů přímo na zařízení. Tato aplikace je vytvořena pomocí React.js, Tailwind CSS a Capacitor.js, což umožňuje její spuštění jako progresivní webovou aplikaci (PWA) nebo jako nativní Android aplikaci.
 
-Currently, two official plugins are available:
+## ✨ Funkce
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Správa hráčů:** Snadné přidávání, přejmenování a mazání hráčů.
+- **Nastavení zápasu:** Konfigurace typu hry (301, 501 atd.), počtu setů a legů na set, s volitelnými pravidly Double In / Double Out.
+- **Interaktivní výsledková tabule:** Přehledné zobrazení skóre a aktuálního hráče.
+- **Historie zápasů:** Uchovává záznamy o odehraných zápasech.
+- **Síň slávy:** Zobrazuje statistiky hráčů, včetně počtu výher a celkových zápasů.
+- **Lokální ukládání dat:** Všechna data jsou ukládána přímo ve vašem zařízení, bez nutnosti připojení k internetu nebo externích služeb (jako je Firebase).
 
-## React Compiler
+## 🚀 Technologie
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend:** [React.js](https://reactjs.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Mobile app runtime:** [Capacitor.js](https://capacitorjs.com/)
+- **Build tool:** [Vite](https://vitejs.dev/)
+- **Lokální úložiště:** [LocalForage](https://localforage.github.io/localForage/)
 
-## Expanding the ESLint configuration
+## 🛠️ Lokální vývoj
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Chcete-li spustit aplikaci lokálně pro vývoj nebo testování:
+
+1.  **Klonujte repozitář:**
+    ```bash
+    git clone https://github.com/VÁŠ_GITHUB_USER/sipky-app.git
+    cd sipky-app
+    ```
+2.  **Nainstalujte závislosti:**
+    ```bash
+    npm install
+    ```
+3.  **Spusťte vývojový server:**
+    ```bash
+    npm run dev
+    ```
+    Aplikace bude k dispozici na `http://localhost:5173` (nebo jiném portu).
+
+## 📱 Sestavení pro Android
+
+Tento projekt je nakonfigurován pro automatické sestavování Android APK souborů pomocí **GitHub Actions**.
+
+1.  **Nahrajte změny na GitHub** (do větve `main` nebo `master`).
+2.  Navštivte záložku **Actions** ve vašem GitHub repozitáři.
+3.  Najděte workflow s názvem "Build Android APK". Po úspěšném dokončení workflow si stáhněte vygenerovaný `sipky-app-debug.zip` soubor, který obsahuje APK.
+
+Alternativně můžete sestavit lokálně (vyžaduje Android Studio a SDK):
+
+```bash
+npm run build
+npx cap sync
+npx cap add android # Pokud jste ještě nepřidali platformu
+npx cap open android # Otevře Android Studio pro sestavení
+```
